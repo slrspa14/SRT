@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace SRT
@@ -30,7 +31,6 @@ namespace SRT
 
         private void Main_Load(object sender, EventArgs e)
         {
-            
             Login = new Uri(SRTLogin);
             Schedule = new Uri(SRTSchedule);
 
@@ -47,26 +47,20 @@ namespace SRT
             }
         }
 
-        private void mBrowser_DocumentCompleted(object sender, WebBrowserDocumentCompletedEventArgs e)
+        private async void mBrowser_DocumentCompleted(object sender, WebBrowserDocumentCompletedEventArgs e)
         {
-            
-            if (Run)
-            {
-                if (e.Url.AbsoluteUri == Schedule.AbsoluteUri)
-                {
-                    MakeReservation();
-                }
-                else
-                {
-                    return;
-                }
-            }
             if (e.Url.AbsoluteUri == Login.AbsoluteUri)
             {
                 AutoLogin();
+                return;
             }
-            return;
+
+            if (Run && e.Url.AbsoluteUri == Schedule.AbsoluteUri)
+            {
+                await MakeReservation();
+            }
         }
+
 
         private void AutoLogin()
         {
@@ -95,57 +89,135 @@ namespace SRT
             }
         }
 
-        private void MakeReservation()
+        private async Task MakeReservation()
         {
-            Thread.Sleep(3000);
-
-            HtmlDocument hd = mBrowser.Document;
-
-            List<HtmlElement> htmlAll = GetHtmlElementByTagAndClass(hd, "a", "btn_small btn_burgundy_dark val_m wx90");
-            List<HtmlElement> htmlChecked = GetCheckedList(htmlAll);
-
-            Debug.WriteLine(htmlChecked.Count);
-
-            if (mBrowser.ReadyState == WebBrowserReadyState.Complete)
+            while (Run)
             {
-                if (htmlChecked.Count > 0)
+                try
                 {
-                    foreach (HtmlElement item in htmlChecked)
+                    // 3초 대기
+                    await Task.Delay(3000);
+
+                    HtmlDocument hd = mBrowser.Document;
+                    if (hd == null)
                     {
-                        item.InvokeMember("onclick");
-                        Run = false;
-                        return;
+                        Debug.WriteLine("ERROR: HtmlDocument is null.");
+                        continue;
+                    }
+
+                    List<HtmlElement> htmlAll = GetHtmlElementByTagAndClass(hd, "a", "btn_small btn_burgundy_dark val_m wx90");
+                    if (htmlAll == null || htmlAll.Count == 0)
+                    {
+                        Debug.WriteLine("No matching elements found.");
+                        await Task.Delay(1000);
+                        ScheduleSearch();
+                        continue;
+                    }
+
+                    List<HtmlElement> htmlChecked = GetCheckedList(htmlAll);
+
+                    Debug.WriteLine($"Checked elements count: {htmlChecked.Count}");
+
+                    // 브라우저 상태 확인
+                    if (mBrowser.ReadyState == WebBrowserReadyState.Complete)
+                    {
+                        if (htmlChecked.Count > 0)
+                        {
+                            foreach (HtmlElement item in htmlChecked)
+                            {
+                                item.InvokeMember("onclick");
+                                Debug.WriteLine("Reservation made successfully.");
+                                Run = false;
+                                return;
+                            }
+                        }
+                        else
+                        {
+                            // 체크된 항목이 없을 경우 ScheduleSearch 호출
+                            ScheduleSearch();
+                        }
+                    }
+                    else
+                    {
+                        Debug.WriteLine("Browser is not ready.");
                     }
                 }
-                else
+                catch (Exception ex)
                 {
-                    ScheduleSearch();
-                    return;
+                    // 예외 처리
+                    Debug.WriteLine($"ERROR: {ex.Message}");
                 }
             }
         }
+
+
+        //private void ScheduleSearch()
+        //{
+
+        //    HtmlDocument hd = mBrowser.Document;
+        //    List<HtmlElement> htmlList = GetHtmlElementByTagAndID(hd, "form", "search-form");
+        //    if (htmlList.Count == 1)
+        //    {
+        //        HtmlElementCollection collection = htmlList[0].GetElementsByTagName("input");
+        //        foreach (HtmlElement item in collection)
+        //        {
+        //            if (item.GetAttribute("type") == "submit"
+        //                && item.GetAttribute("value") == "조회하기")
+        //            {
+        //                item.InvokeMember("click");
+        //                runCount++;
+        //                txtRunState.Text = $"ON\r\nCount : {runCount}";
+        //                return;
+        //            }
+        //        }
+        //    }
+        //}
 
         private void ScheduleSearch()
         {
-
             HtmlDocument hd = mBrowser.Document;
-            List<HtmlElement> htmlList = GetHtmlElementByTagAndID(hd, "form", "search-form");
-            if (htmlList.Count == 1)
+            if (hd == null)
             {
-                HtmlElementCollection collection = htmlList[0].GetElementsByTagName("input");
-                foreach (HtmlElement item in collection)
+                txtRunState.Text = "ERROR: HtmlDocument is null.";
+                return;
+            }
+
+            List<HtmlElement> htmlList = GetHtmlElementByTagAndID(hd, "form", "search-form");
+            if (htmlList.Count != 1)
+            {
+                txtRunState.Text = "ERROR: 'search-form' not found or multiple forms detected.";
+                return;
+            }
+
+            HtmlElementCollection collection = htmlList[0].GetElementsByTagName("input");
+            foreach (HtmlElement item in collection)
+            {
+                if (item.GetAttribute("type") == "submit" && item.GetAttribute("value") == "조회하기")
                 {
-                    if (item.GetAttribute("type") == "submit"
-                        && item.GetAttribute("value") == "조회하기")
+                    try
                     {
                         item.InvokeMember("click");
                         runCount++;
-                        txtRunState.Text = $"ON\r\nCount : {runCount}";
+
+                        // UI 스레드에서 상태 업데이트
+                        this.Invoke((MethodInvoker)delegate
+                        {
+                            txtRunState.Text = $"ON\r\nCount : {runCount}";
+                        });
+                        return;
+                    }
+                    catch (Exception ex)
+                    {
+                        this.Invoke((MethodInvoker)delegate
+                        {
+                            txtRunState.Text = $"ERROR: {ex.Message}";
+                        });
                         return;
                     }
                 }
             }
         }
+
 
         private List<HtmlElement> GetCheckedList(List<HtmlElement> All)
         {
@@ -264,6 +336,12 @@ namespace SRT
                     item.Checked = false;
                 }
             }
+        }
+
+        private void btnStop_Click(object sender, EventArgs e)
+        {
+            Run = false;
+            Debug.WriteLine("정지");
         }
     }
 }

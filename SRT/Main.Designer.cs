@@ -44,6 +44,7 @@
             this.txtRunState = new System.Windows.Forms.TextBox();
             this.mBrowser = new System.Windows.Forms.WebBrowser();
             this.checkALL = new System.Windows.Forms.CheckBox();
+            this.btnStop = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // checkBox1
@@ -159,7 +160,7 @@
             // btnStart
             // 
             this.btnStart.Font = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.btnStart.Location = new System.Drawing.Point(12, 351);
+            this.btnStart.Location = new System.Drawing.Point(12, 325);
             this.btnStart.Name = "btnStart";
             this.btnStart.Size = new System.Drawing.Size(75, 23);
             this.btnStart.TabIndex = 1;
@@ -223,6 +224,17 @@
             this.checkALL.UseVisualStyleBackColor = true;
             this.checkALL.CheckedChanged += new System.EventHandler(this.checkALL_CheckedChanged);
             // 
+            // btnStop
+            // 
+            this.btnStop.Font = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.btnStop.Location = new System.Drawing.Point(12, 351);
+            this.btnStop.Name = "btnStop";
+            this.btnStop.Size = new System.Drawing.Size(75, 23);
+            this.btnStop.TabIndex = 1;
+            this.btnStop.Text = "정지";
+            this.btnStop.UseVisualStyleBackColor = true;
+            this.btnStop.Click += new System.EventHandler(this.btnStop_Click);
+            // 
             // Main
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
@@ -230,6 +242,7 @@
             this.ClientSize = new System.Drawing.Size(800, 450);
             this.Controls.Add(this.mBrowser);
             this.Controls.Add(this.txtRunState);
+            this.Controls.Add(this.btnStop);
             this.Controls.Add(this.btnStart);
             this.Controls.Add(this.checkALL);
             this.Controls.Add(this.checkBoxSpecial);
@@ -270,6 +283,7 @@
         private System.Windows.Forms.TextBox txtRunState;
         private System.Windows.Forms.WebBrowser mBrowser;
         private System.Windows.Forms.CheckBox checkALL;
+        private System.Windows.Forms.Button btnStop;
     }
 }
 
