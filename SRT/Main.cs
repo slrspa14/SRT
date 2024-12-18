@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
-using System.Threading;
+using System.Linq;
+using System.Media;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -9,17 +11,19 @@ namespace SRT
 {
     public partial class Main : Form
     {
-        //URL 연결(로그인, 예매 페이지)
-        //예매버튼 활성화 되어 있는거 찾기 및 없으면 조회 버튼 반복
-
         public string SRTLogin = "https://etk.srail.kr/cmc/01/selectLoginForm.do?pageId=TK0701000000";
         public string SRTSchedule = "https://etk.srail.kr/hpg/hra/01/selectScheduleList.do?pageId=TK0101010000";
-        List<CheckBox> checkBoxes = new List<CheckBox>();
+        public SoundPlayer sound = new SoundPlayer();
+        public const string soundlocation = @"";
 
-        private bool Run = false;
+        private bool Run { get; set; } = true;
+        private bool bSound { get; set; } = false;
         private int runCount { get; set; } = 0;
         private string ID = "";
         private string PW = "";
+        private bool firstPopup = true;
+
+        private List<CheckBox> checkBoxes = new List<CheckBox>();
 
         Uri Login;
         Uri Schedule;
@@ -45,6 +49,7 @@ namespace SRT
                     checkBoxes.Add(check);
                 }
             }
+            CenterToScreen();
         }
 
         private async void mBrowser_DocumentCompleted(object sender, WebBrowserDocumentCompletedEventArgs e)
@@ -54,13 +59,11 @@ namespace SRT
                 AutoLogin();
                 return;
             }
-
             if (Run && e.Url.AbsoluteUri == Schedule.AbsoluteUri)
             {
                 await MakeReservation();
             }
         }
-
 
         private void AutoLogin()
         {
@@ -128,6 +131,8 @@ namespace SRT
                                 item.InvokeMember("onclick");
                                 Debug.WriteLine("Reservation made successfully.");
                                 Run = false;
+                                //효과음 띄워서 알려주기
+                                //SoundOn();
                                 return;
                             }
                         }
@@ -149,29 +154,6 @@ namespace SRT
                 }
             }
         }
-
-
-        //private void ScheduleSearch()
-        //{
-
-        //    HtmlDocument hd = mBrowser.Document;
-        //    List<HtmlElement> htmlList = GetHtmlElementByTagAndID(hd, "form", "search-form");
-        //    if (htmlList.Count == 1)
-        //    {
-        //        HtmlElementCollection collection = htmlList[0].GetElementsByTagName("input");
-        //        foreach (HtmlElement item in collection)
-        //        {
-        //            if (item.GetAttribute("type") == "submit"
-        //                && item.GetAttribute("value") == "조회하기")
-        //            {
-        //                item.InvokeMember("click");
-        //                runCount++;
-        //                txtRunState.Text = $"ON\r\nCount : {runCount}";
-        //                return;
-        //            }
-        //        }
-        //    }
-        //}
 
         private void ScheduleSearch()
         {
@@ -217,7 +199,6 @@ namespace SRT
                 }
             }
         }
-
 
         private List<HtmlElement> GetCheckedList(List<HtmlElement> All)
         {
@@ -268,17 +249,16 @@ namespace SRT
             int index1 = element.OuterHtml.IndexOf(",");
             int index2 = element.OuterHtml.IndexOf(",", index1 + 1);
             int index3 = element.OuterHtml.IndexOf(",", index2 + 1);
-            string Value2 = element.OuterHtml.Substring(index1, index2 - index1);
-            string Value3 = element.OuterHtml.Substring(index2, index3 - index2);
-            Value2 = Value2.Replace(",", "");
-            Value2 = Value2.Trim();
-            Value2 = Value2.Replace("'", "");
-            Value3 = Value2.Replace(",", "");
-            Value3 = Value2.Trim();
-            Value3 = Value2.Replace("'", "");
-            Debug.WriteLine($"Extracted Values: Value2 = {Value2}, Value3 = {Value3}");//debug
-            value2nd = Convert.ToInt32(Value2);
-            value3rd = Convert.ToInt32(Value3);
+            string str1 = element.OuterHtml.Substring(index1, index2 - index1);
+            string str2 = element.OuterHtml.Substring(index2, index3 - index2);
+            str1 = str1.Replace(",", "");
+            str1 = str1.Replace(" ", "");
+            str1 = str1.Replace("'", "");
+            str2 = str2.Replace(",", "");
+            str2 = str2.Replace(" ", "");
+            str2 = str2.Replace("'", "");
+            value2nd = Convert.ToInt32(str1);
+            value3rd = Convert.ToInt32(str2);
         }
 
         private List<HtmlElement> GetHtmlElementByTagAndClass(HtmlDocument document, string tag, string className)
@@ -307,6 +287,18 @@ namespace SRT
                 }
             }
             return output;
+        }
+
+        private void SoundOn()
+        {
+            bSound = true;
+            sound.PlayLooping();
+        }
+
+        private void SoundOff()
+        {
+            bSound = false;
+            sound.Stop();
         }
 
         private void btnStart_Click(object sender, EventArgs e)
@@ -342,6 +334,22 @@ namespace SRT
         {
             Run = false;
             Debug.WriteLine("정지");
+        }
+
+        private void mBrowser_NewWindow(object sender, CancelEventArgs e)
+        {
+            //if(firstPopup)
+            //{
+            //    e.Cancel = true;
+            //}
+            //firstPopup = false;
+
+            //string popupUrl = mBrowser.StatusText;
+
+            //if (popupUrl.Contains("완료"))
+            //{
+            //    e.Cancel = true;
+            //}
         }
     }
 }

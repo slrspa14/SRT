@@ -211,6 +211,7 @@
             this.mBrowser.Size = new System.Drawing.Size(695, 426);
             this.mBrowser.TabIndex = 3;
             this.mBrowser.DocumentCompleted += new System.Windows.Forms.WebBrowserDocumentCompletedEventHandler(this.mBrowser_DocumentCompleted);
+            this.mBrowser.NewWindow += new System.ComponentModel.CancelEventHandler(this.mBrowser_NewWindow);
             // 
             // checkALL
             // 
