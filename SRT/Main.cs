@@ -17,8 +17,8 @@ namespace SRT
 
         private bool Run = false;
         private int runCount { get; set; } = 0;
-        private string ID = "2282637655";
-        private string PW = "shs147851@";
+        private string ID = "";
+        private string PW = "";
 
         Uri Login;
         Uri Schedule;
